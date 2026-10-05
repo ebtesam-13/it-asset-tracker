@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام إدارة وتتبع الأصول التقنية - IT Asset Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f6f9; font-family: system-ui, -apple-system, sans-serif; }
+    .card-header { background-color: #0d6efd; color: white; }
+    .stat-card { border-right: 4px solid #0d6efd; }
+  </style>
+</head>
+<body class="p-4">
+
+  <div class="container">
+    <!-- العنوان الرئيسي -->
+    <div class="row mb-4">
+      <div class="col">
+        <h2 class="fw-bold text-primary">💻 نظام إدارة الأجهزة والأصول التقنية</h2>
+        <p class="text-muted">لوحة تحكم لمتابعة حالة أجهزة الشبكة والملحقات بالشركة</p>
+      </div>
+    </div>
+
+    <!-- كروت الإحصائيات -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 shadow-sm stat-card">
+          <small class="text-muted">إجمالي الأجهزة</small>
+          <h3 id="total-count" class="fw-bold my-1">0</h3>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-end border-success border-4">
+          <small class="text-muted">الأجهزة النشطة (Active)</small>
+          <h3 id="active-count" class="fw-bold text-success my-1">0</h3>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-end border-warning border-4">
+          <small class="text-muted">قيد الصيانة (Maintenance)</small>
+          <h3 id="maint-count" class="fw-bold text-warning my-1">0</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- نموذج إضافة / تعديل جهاز -->
+      <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <h6 class="mb-0" id="form-title">إضافة جهاز جديد</h6>
+          </div>
+          <div class="card-body">
+            <form id="add-device-form">
+              <input type="hidden" id="edit-index" value="-1">
+              
+              <div class="mb-3">
+                <label class="form-label">رقم الجهاز (Tag / Asset ID)</label>
+                <input type="text" id="dev-tag" class="form-control" placeholder="مثال: AST-101" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">اسم الجهاز</label>
+                <input type="text" id="dev-name" class="form-control" placeholder="مثال: Core Router" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">النوع</label>
+                <select id="dev-type" class="form-select">
+                  <option value="PC">PC (كمبيوتر مكتبي)</option>
+                  <option value="Router">Router</option>
+                  <option value="Switch">Switch</option>
+                  <option value="Printer">Printer</option>
+                  <option value="Server">Server</option>
+                  <option value="Biometric">Biometric</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">الموقع (Location)</label>
+                <input type="text" id="dev-location" class="form-control" placeholder="مثال: المبنى الرئيسي - الدور 2" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">عنوان IP</label>
+                <input type="text" id="dev-ip" class="form-control" placeholder="192.168.1.50" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">القسم</label>
+                <input type="text" id="dev-dept" class="form-control" placeholder="IT / HR / Finance" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">الحالة</label>
+                <select id="dev-status" class="form-select">
+                  <option value="Active">Active (نشط)</option>
+                  <option value="Maintenance">Maintenance (صيانة)</option>
+                </select>
+              </div>
+              <button type="submit" id="submit-btn" class="btn btn-primary w-100">إضافة الجهاز</button>
+              <button type="button" id="cancel-edit-btn" class="btn btn-outline-secondary w-100 mt-2 d-none" onclick="resetForm()">إلغاء التعديل</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- جدول عرض الأجهزة -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <h6 class="mb-0">قائمة الأجهزة المسجلة</h6>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>رقم الجهاز</th>
+                  <th>اسم الجهاز</th>
+                  <th>النوع</th>
+                  <th>الموقع</th>
+                  <th>عنوان IP</th>
+                  <th>القسم</th>
+                  <th>الحالة</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="devices-list">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let devicesData = [];
+
+    // جلب البيانات من السيرفر
+    function loadDevices() {
+      fetch('/api/devices')
+        .then(res => res.json())
+        .then(data => {
+          devicesData = data;
+          renderTable();
+        })
+        .catch(err => console.error("خطأ في جلب البيانات من السيرفر:", err));
+    }
+
+    // حفظ البيانات وتعديلها مباشرة في devices.json عن طريق السيرفر
+    function saveDevicesToServer() {
+      fetch('/api/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(devicesData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        renderTable();
+      })
+      .catch(err => console.error("خطأ في الحفظ:", err));
+    }
+
+    function renderTable() {
+      const tableBody = document.getElementById('devices-list');
+      tableBody.innerHTML = '';
+
+      let activeCount = 0;
+      let maintCount = 0;
+
+      devicesData.forEach((device, index) => {
+        if(device.status === 'Active') activeCount++;
+        else maintCount++;
+
+        let badgeColor = device.status === 'Active' ? 'bg-success' : 'bg-warning text-dark';
+        
+        const row = `
+          <tr>
+            <td><span class="badge bg-dark">${device.asset_tag || 'AST-' + (index + 100)}</span></td>
+            <td class="fw-bold">${device.name}</td>
+            <td><span class="badge bg-secondary">${device.type}</span></td>
+            <td><small>${device.location || 'غير محدد'}</small></td>
+            <td><code>${device.ip_address}</code></td>
+            <td>${device.department}</td>
+            <td><span class="badge ${badgeColor}">${device.status}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="editDevice(${index})">تعديل</button>
+            </td>
+          </tr>
+        `;
+        tableBody.innerHTML += row;
+      });
+
+      document.getElementById('total-count').innerText = devicesData.length;
+      document.getElementById('active-count').innerText = activeCount;
+      document.getElementById('maint-count').innerText = maintCount;
+    }
+
+    document.getElementById('add-device-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const editIndex = parseInt(document.getElementById('edit-index').value);
+
+      const deviceData = {
+        asset_tag: document.getElementById('dev-tag').value,
+        name: document.getElementById('dev-name').value,
+        type: document.getElementById('dev-type').value,
+        location: document.getElementById('dev-location').value,
+        ip_address: document.getElementById('dev-ip').value,
+        department: document.getElementById('dev-dept').value,
+        status: document.getElementById('dev-status').value
+      };
+
+      if (editIndex === -1) {
+        devicesData.push(deviceData);
+      } else {
+        devicesData[editIndex] = deviceData;
+      }
+
+      saveDevicesToServer();
+      resetForm();
+    });
+
+    function editDevice(index) {
+      const dev = devicesData[index];
+      document.getElementById('edit-index').value = index;
+      document.getElementById('dev-tag').value = dev.asset_tag || '';
+      document.getElementById('dev-name').value = dev.name || '';
+      document.getElementById('dev-type').value = dev.type || 'PC';
+      document.getElementById('dev-location').value = dev.location || '';
+      document.getElementById('dev-ip').value = dev.ip_address || '';
+      document.getElementById('dev-dept').value = dev.department || '';
+      document.getElementById('dev-status').value = dev.status || 'Active';
+
+      document.getElementById('form-title').innerText = "تعديل بيانات الجهاز";
+      document.getElementById('submit-btn').innerText = "حفظ التعديلات";
+      document.getElementById('submit-btn').className = "btn btn-success w-100";
+      document.getElementById('cancel-edit-btn').classList.remove('d-none');
+    }
+
+    function resetForm() {
+      document.getElementById('add-device-form').reset();
+      document.getElementById('edit-index').value = "-1";
+      document.getElementById('form-title').innerText = "إضافة جهاز جديد";
+      document.getElementById('submit-btn').innerText = "إضافة الجهاز";
+      document.getElementById('submit-btn').className = "btn btn-primary w-100";
+      document.getElementById('cancel-edit-btn').classList.add('d-none');
+    }
+
+    // جلب البيانات فور تحميل الصفحة من السيرفر
+    loadDevices();
+  </script>
+</body>
+</html>

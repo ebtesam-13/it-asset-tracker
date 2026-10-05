@@ -1,0 +1,38 @@
+[
+  {
+    "asset_tag": "AST-101",
+    "name": "Core Router - HQ",
+    "type": "Router",
+    "location": "غرفة السيرفرات - الدور 1",
+    "ip_address": "192.168.1.1",
+    "department": "IT",
+    "status": "Active"
+  },
+  {
+    "asset_tag": "AST-102",
+    "name": "HR Shared Printer",
+    "type": "Printer",
+    "location": "مبنى الإدارة - الدور الثاني",
+    "ip_address": "192.168.2.15",
+    "department": "HR",
+    "status": "Maintenance"
+  },
+  {
+    "asset_tag": "AST-103",
+    "name": "Finance Workstation PC",
+    "type": "PC",
+    "location": "قسم المالية - مكتب 4",
+    "ip_address": "192.168.1.105",
+    "department": "Finance",
+    "status": "Active"
+  },
+  {
+    "asset_tag": "AST-103",
+    "name": "PC3",
+    "type": "PC",
+    "location": "المبنى الرئيسي - الدور 3 مكتب 9",
+    "ip_address": "192.168.1.30",
+    "department": "HR",
+    "status": "Maintenance"
+  }
+]
